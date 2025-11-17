@@ -1,16 +1,28 @@
 # HW3-1: LunarLander-v3 with PPO
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jaredlcs/HW3-Projects/blob/main/HW3_1/colab_notebook.ipynb)
+## Demo Video
 
-**CSCI6353 Homework 3 - Part 1**  
-**Author:** Jared Soto  
-**Date:** November 2025
+**[Watch the trained agent in action on YouTube](https://youtu.be/mQDf61ym2ro)** 🚀
+
+## Implementation Details
+
+This project implements PPO **from scratch** without using high-level RL libraries:
+
+**Libraries used:**
+- PyTorch (for neural networks)
+- Gymnasium (for the environment only)
+- Standard Python libraries (NumPy, Matplotlib)
+
+**Not used:** Stable-Baselines3, RLlib, or any RL frameworks
 
 ## Quick Start
 
-### Run in Google Colab (Recommended)
+You can run this project either on **Google Colab** or **locally** on your machine.
 
-**Click the "Open in Colab" badge above** to open a ready-to-run notebook, or manually use:
+### Option 1: Run on Google Colab (Recommended)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jaredlcs/HW3-Projects/blob/main/HW3_1/colab_notebook.ipynb)
+
+**Click the "Open in Colab" badge** to open a ready-to-run notebook, or manually:
 
 ```python
 # Install Box2D dependencies
@@ -22,13 +34,11 @@
 %cd HW3-Projects/HW3_1
 !pip install gymnasium[box2d] torch matplotlib
 
-# Train
+# Train the agent
 !python main.py
 ```
 
-See [COLAB_GUIDE.md](COLAB_GUIDE.md) for detailed Colab instructions.
-
-### Run Locally
+### Option 2: Run Locally
 
 ```bash
 git clone https://github.com/jaredlcs/HW3-Projects.git
@@ -37,298 +47,119 @@ pip install -r requirements.txt
 python main.py
 ```
 
-## Overview
+## What This Does
 
-This project implements **PPO (Proximal Policy Optimization)** to train an agent on the LunarLander-v3 discrete environment from Gymnasium. The agent learns to safely land a lunar module by controlling its thrusters.
+This project trains an AI agent to land a lunar module safely using **PPO (Proximal Policy Optimization)**, a state-of-the-art reinforcement learning algorithm. The agent learns by trial and error, controlling thrusters to achieve soft landings.
 
-**Target Performance:** Average reward ≥ 200 (stable landing)
+**Goal:** Achieve an average reward ≥ 200 over 100 episodes (indicating consistent successful landings)
 
-## Environment Details
+## How It Works
 
-- **Environment:** `LunarLander-v3` (Discrete)
-- **Observation Space:** 8-dimensional continuous (position, velocity, angle, angular velocity, leg contact)
-- **Action Space:** 4 discrete actions
-  - 0: Do nothing
-  - 1: Fire left orientation engine
-  - 2: Fire main engine
-  - 3: Fire right orientation engine
-- **Reward:** Ranges from approximately -100 to +200
-  - Crash: -100
-  - Successful landing: +100-200
-  - Fuel consumption penalized
+### The Environment
 
-## Algorithm: PPO (Proximal Policy Optimization)
+The agent controls a lunar lander with 4 possible actions:
+- **Do nothing** - Coast
+- **Fire left engine** - Rotate right
+- **Fire main engine** - Thrust upward
+- **Fire right engine** - Rotate left
 
-PPO is a state-of-the-art policy gradient method that:
-- **Actor:** Learns a policy π(a|s) that maps states to action probabilities
-- **Critic:** Learns a value function V(s) to estimate expected returns
-- **Clipped Objective:** Prevents large policy updates using ratio clipping
-- **GAE:** Uses Generalized Advantage Estimation for variance reduction
+The agent observes 8 values: position, velocity, angle, angular velocity, and leg contact states.
 
-### Key Features
-- Clipped surrogate objective for stable training
-- GAE (λ=0.95) for better advantage estimation
-- Multiple epochs per batch for sample efficiency
-- Entropy bonus for exploration
-- Gradient clipping for training stability
-- Shared network backbone with separate actor/critic heads
+**Rewards:**
+- Crash: -100 points
+- Successful landing: +100 to +200 points
+- Fuel usage: Small penalties to encourage efficiency
 
-## Network Architecture
+### The Algorithm: PPO
 
-```
-Input (8) → FC(128) → ReLU → FC(128) → ReLU
-                                        ↓
-                         ┌──────────────┴──────────────┐
-                         ↓                             ↓
-                   Actor Head (4)              Critic Head (1)
-                  [Action Probs]                  [Value]
-```
+PPO (Proximal Policy Optimization) uses two neural networks:
+- **Actor:** Decides which action to take
+- **Critic:** Evaluates how good the current state is
+
+The algorithm learns by:
+1. Collecting experience from the environment
+2. Computing how much better/worse actions were than expected
+3. Updating the policy to favor better actions
+4. Repeating until the agent masters landing
 
 ## Hyperparameters
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| Learning Rate | 0.0003 | Adam optimizer learning rate |
-| Gamma (γ) | 0.99 | Discount factor |
-| GAE Lambda (λ) | 0.95 | GAE advantage estimation parameter |
-| Clip Epsilon (ε) | 0.2 | PPO clipping parameter |
-| T Horizon | 2048 | Steps per policy update |
-| K Epochs | 4 | PPO update epochs per batch |
-| Batch Size | 64 | Mini-batch size for PPO |
-| Entropy Coef | 0.01 | Entropy bonus coefficient |
-| Value Coef | 0.5 | Value loss coefficient |
-| Hidden Dim | 128 | Hidden layer size |
-| Max Episodes | 2000 | Maximum training episodes |
-| Target Reward | 200 | Convergence threshold (100-ep avg) |
+These are the settings we used to train the agent:
 
-## Installation
+| Parameter | Value | What It Does |
+|-----------|-------|--------------|
+| Learning Rate | 0.0003 | How fast the agent learns |
+| Gamma (γ) | 0.99 | How much to value future rewards |
+| GAE Lambda (λ) | 0.95 | Balance between bias and variance |
+| Clip Epsilon (ε) | 0.2 | Prevents too-large policy updates |
+| T Horizon | 4096 | Steps collected before each update |
+| K Epochs | 10 | Training passes per batch |
+| Batch Size | 64 | Mini-batch size for training |
+| Entropy Coef | 0.01 | Encourages exploration |
+| Value Coef | 0.5 | Weight for value function loss |
+| Hidden Dim | 128 | Neural network size |
+| Max Episodes | 5000 | Maximum training episodes |
+| Target Reward | 200 | Success threshold (100-ep average) |
 
-### Requirements
+## Requirements
 
-- Python 3.8+
+- Python 3.8 or higher
 - PyTorch
-- Gymnasium
+- Gymnasium with Box2D
 - NumPy
 - Matplotlib
 
-### Quick Setup
+Install everything with:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Or manually:
+## How to Use
 
-```bash
-pip install torch gymnasium numpy matplotlib
-```
-
-### Google Colab Setup
-
-```python
-# Install Box2D system dependencies
-!apt-get update -qq
-!apt-get install -y swig build-essential python3-dev
-
-# Clone the repository
-!git clone https://github.com/jaredlcs/HW3-Projects.git
-%cd HW3-Projects/HW3_1
-
-# Install Python dependencies
-!pip install gymnasium[box2d] torch matplotlib
-
-# Run training
-!python main.py
-```
-
-## Usage
-
-### Training
-
-Train a new model from scratch:
+### Train a New Agent
 
 ```bash
 python main.py
 ```
 
-Resume training from checkpoint:
+This will train the agent from scratch. Training takes about 20-40 minutes on CPU or 10-20 minutes on GPU.
+
+### Resume Training (if interrupted)
 
 ```bash
 python main.py --resume
 ```
 
-### Testing
-
-Test the trained model (requires `model.pth`):
+### Test the Trained Agent
 
 ```bash
 python main.py --test
 ```
 
-Test without rendering (faster):
-
-```bash
-python main.py --test --no-render
-```
-
-Test for 20 episodes:
+This runs 10 test episodes with visualization. For more episodes:
 
 ```bash
 python main.py --test --test-episodes 20
 ```
 
-## Checkpoint System
+## What Gets Saved
 
-The checkpoint system allows you to:
-- **Resume training** if interrupted (e.g., Colab timeout)
-- **Save progress** every 50 episodes
-- **Track best model** based on 100-episode moving average
+After training, you'll see these files:
 
-### Checkpoint Files
+- **`model.pth`** - The trained agent (best model)
+- **`train_plot.png`** - Graph showing learning progress
+- **`checkpoints/`** - Saved progress (for resuming training)
 
-- `checkpoints/training_progress.pkl` - Full training state (model, optimizer, scores)
-- `checkpoints/metadata.json` - Training metadata and statistics
-- `model.pth` - Best model (highest 100-episode average)
-- `train_plot.png` - Training curve visualization
-
-### Resuming After Interruption
-
-If training is interrupted:
-
-1. Simply run: `python main.py --resume`
-2. Training will continue from the last checkpoint
-3. All episode scores are preserved
-
-## Output Files
-
-After training, you will have:
-
-1. **`model.pth`** - Trained model weights (best performing)
-2. **`train_plot.png`** - Learning curve showing training progress
-3. **`checkpoints/`** - Training checkpoints for resuming
-
-## Expected Training Time
-
-- **CPU:** ~20-40 minutes for convergence
-- **GPU:** ~10-20 minutes for convergence
-- **Convergence:** Typically 300-600 episodes to reach avg reward ≥ 200 (faster than A2C!)
-
-## Training Curve
-
-The `train_plot.png` shows:
-- Raw episode rewards (light blue)
-- 100-episode moving average (dark blue)
-- Target reward threshold (red dashed line at 200)
-
-**Expected Trend:** Upward trajectory with convergence around 200-250 average reward
-
-## Demo Video
-
-**YouTube Link:** [Will be added after recording]
-
-The demo video shows:
-- Successful lunar landings using the trained model
-- Smooth thruster control
-- Safe touchdown with minimal fuel consumption
-
-## Code Structure
-
-```
-main.py
-├── Config                  # Hyperparameters and settings
-├── CheckpointManager       # Save/load training progress
-├── ActorCritic            # Neural network (actor + critic)
-├── A2CAgent               # Agent with training logic
-├── train()                # Training loop with checkpointing
-├── test()                 # Model evaluation
-└── main()                 # Entry point with CLI args
-```
-
-## Implementation Notes
-
-### What's Implemented (No External RL Libraries)
-- ✅ Actor-Critic network architecture
-- ✅ PPO clipped surrogate objective
-- ✅ GAE (Generalized Advantage Estimation)
-- ✅ Multiple epoch updates with mini-batches
-- ✅ Entropy bonus for exploration
-- ✅ Advantage calculation and normalization
-- ✅ Experience collection and buffer management
-- ✅ Gradient clipping for stability
-
-### External Libraries Used (Allowed)
-- `PyTorch` - Neural network implementation (allowed per assignment)
-- `Gymnasium` - Environment only (not RL algorithm)
-- Standard Python libraries (NumPy, Matplotlib, etc.)
-
-**No Stable-Baselines3, RLlib, or high-level RL frameworks used.**
-
-## Troubleshooting
-
-### Model doesn't converge
-- Try increasing `MAX_EPISODES` to 3000-5000
-- Adjust `LEARNING_RATE` (try 0.0002 or 0.0005)
-- Increase `HIDDEN_DIM` to 256
-- Adjust `CLIP_EPSILON` (try 0.1 or 0.3)
-- Increase `T_HORIZON` to 4096 for more samples per update
-
-### Training is slow
-- Use GPU if available (automatically detected)
-- Reduce checkpoint frequency (modify save interval)
-
-### Colab session timeout
-- Use `--resume` flag when restarting
-- Checkpoints are saved every 50 episodes
-
-### Can't render in test mode
-- Make sure you have a display (won't work on headless servers)
-- Use `--no-render` flag for testing without visualization
-
-## Performance Metrics
-
-Expected final performance:
-- **Mean Reward:** 200-250
-- **Success Rate:** >85% successful landings
-- **Convergence:** 300-600 episodes (PPO is more sample efficient!)
-
-## Assignment Deliverables Checklist
-
-- [x] `main.py` - Training and testing script
-- [x] `README.md` - This file with all details
-- [ ] `model.pth` - Trained model (generated during training)
-- [ ] `train_plot.png` - Learning curve (generated during training)
-- [ ] YouTube demo video link (record after training)
-
-## How to Generate All Deliverables
-
-```bash
-# 1. Train the model
-python main.py
-
-# 2. This creates: model.pth and train_plot.png
-
-# 3. Test the model and record video
-python main.py --test
-
-# 4. Upload video to YouTube (public/unlisted)
-
-# 5. Add YouTube link to this README
-```
 
 ## References
 
-- **Environment:** [Gymnasium LunarLander](https://gymnasium.farama.org/environments/box2d/lunar_lander/)
-- **Algorithm:** PPO based on "Proximal Policy Optimization Algorithms" (Schulman et al., 2017)
-- **GAE:** "High-Dimensional Continuous Control Using Generalized Advantage Estimation" (Schulman et al., 2016)
-- **Assignment:** CSCI6353 Homework 3, Part 1
-
-## Contact
-
-For questions or issues:
-- Check code comments in `main.py`
-- Verify all dependencies are installed
-- Ensure Python 3.8+ is being used
+- **Paper:** [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347) (Schulman et al., 2017)
+- **Environment:** [Gymnasium LunarLander Documentation](https://gymnasium.farama.org/environments/box2d/lunar_lander/)
+- **Course:** CSCI6353 Reinforcement Learning
 
 ---
 
-**Note:** This implementation follows the assignment requirement of implementing RL logic from scratch without using high-level RL libraries like Stable-Baselines3.
+**Author:** Jared Soto  
+**Assignment:** CSCI6353 Homework 3, Part 1  
+**Date:** November 2025

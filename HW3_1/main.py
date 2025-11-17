@@ -35,9 +35,9 @@ class Config:
     TARGET_REWARD = 200  # Target average reward
     
     # Training
-    MAX_EPISODES = 2000  # Maximum episodes for training
-    T_HORIZON = 2048  # Steps per policy update (PPO batch size)
-    K_EPOCHS = 4  # Number of epochs for PPO update
+    MAX_EPISODES = 5000  # Maximum episodes for training
+    T_HORIZON = 4096  # Steps per policy update (PPO batch size)
+    K_EPOCHS = 10  # Number of epochs for PPO update
     BATCH_SIZE = 64  # Mini-batch size for PPO
     
     # Network Architecture
@@ -46,18 +46,21 @@ class Config:
     ACTION_DIM = 4  # LunarLander discrete actions (do nothing, left, main, right)
     
     # PPO Hyperparameters
-    LEARNING_RATE = 0.0001  # Reduced from 0.0003 for more stable learning
+    LEARNING_RATE = 0.0003  # Learning rate (will decay)
     GAMMA = 0.99  # Discount factor
     GAE_LAMBDA = 0.95  # GAE parameter
     CLIP_EPSILON = 0.2  # PPO clipping parameter
-    ENTROPY_COEF = 0.01  # Entropy bonus coefficient
+    ENTROPY_COEF = 0.01  # Entropy bonus coefficient (lower for stability)
     VALUE_COEF = 0.5  # Value loss coefficient
     MAX_GRAD_NORM = 0.5  # Gradient clipping
+    VALUE_CLIP = 0.1  # Value function clipping (reduced)
     
     # Checkpoint settings
     CHECKPOINT_DIR = Path("checkpoints")
     MODEL_PATH = Path("model.pth")
     PLOT_PATH = Path("train_plot.png")
+    BEST_RUN_PATH = Path("best_run.pkl")
+    ALL_RUNS_PATH = Path("all_runs.pkl")
     
     # Performance tracking
     EVAL_WINDOW = 100  # Episodes to average for convergence check
@@ -98,12 +101,13 @@ class CheckpointManager:
         self.checkpoint_file = config.CHECKPOINT_DIR / "training_progress.pkl"
         self.metadata_file = config.CHECKPOINT_DIR / "metadata.json"
     
-    def save_checkpoint(self, episode, model, optimizer, scores, metadata=None):
+    def save_checkpoint(self, episode, model, optimizer, scores, scheduler=None, metadata=None):
         """Save training checkpoint"""
         checkpoint = {
             'episode': episode,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
+            'scheduler_state_dict': scheduler.state_dict() if scheduler else None,
             'scores': scores,
             'timestamp': datetime.now().isoformat()
         }
@@ -138,6 +142,83 @@ class CheckpointManager:
         if self.metadata_file.exists():
             self.metadata_file.unlink()
         print("✓ All checkpoints cleared")
+    
+    def save_best_run(self, scores, avg_score, run_number):
+        """Save this run if it's the best so far"""
+        best_run_file = self.config.BEST_RUN_PATH
+        
+        # Load previous best if exists
+        if best_run_file.exists():
+            with open(best_run_file, 'rb') as f:
+                best_data = pickle.load(f)
+                best_avg = best_data['avg_score']
+        else:
+            best_avg = -float('inf')
+        
+        # Save if this run is better
+        if avg_score > best_avg:
+            best_data = {
+                'scores': scores,
+                'avg_score': avg_score,
+                'run_number': run_number,
+                'timestamp': datetime.now().isoformat()
+            }
+            with open(best_run_file, 'wb') as f:
+                pickle.dump(best_data, f)
+            print(f"\n{'='*60}")
+            print(f"🏆 NEW BEST RUN! Run #{run_number} with avg score: {avg_score:.2f}")
+            print(f"{'='*60}\n")
+            return True
+        return False
+    
+    def load_best_run(self):
+        """Load the best run data"""
+        best_run_file = self.config.BEST_RUN_PATH
+        if best_run_file.exists():
+            with open(best_run_file, 'rb') as f:
+                return pickle.load(f)
+        return None
+    
+    def save_run_history(self, scores, avg_score, run_number):
+        """Append this run to history"""
+        history_file = self.config.ALL_RUNS_PATH
+        
+        # Load existing history
+        if history_file.exists():
+            with open(history_file, 'rb') as f:
+                history = pickle.load(f)
+        else:
+            history = []
+        
+        # Append current run
+        history.append({
+            'run_number': run_number,
+            'avg_score': avg_score,
+            'episodes': len(scores),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        # Save updated history
+        with open(history_file, 'wb') as f:
+            pickle.dump(history, f)
+    
+    def get_next_run_number(self):
+        """Get the next run number"""
+        history_file = self.config.ALL_RUNS_PATH
+        if history_file.exists():
+            with open(history_file, 'rb') as f:
+                history = pickle.load(f)
+                return len(history) + 1
+        return 1
+    
+    def clear_all(self):
+        """Clear all saved data including best run"""
+        self.clear_checkpoints()
+        if self.config.BEST_RUN_PATH.exists():
+            self.config.BEST_RUN_PATH.unlink()
+        if self.config.ALL_RUNS_PATH.exists():
+            self.config.ALL_RUNS_PATH.unlink()
+        print("✓ All run data cleared")
 
 
 # ============================================================================
@@ -244,6 +325,13 @@ class PPOAgent:
             lr=config.LEARNING_RATE
         )
         
+        # Learning rate scheduler (step decay for stability)
+        self.scheduler = optim.lr_scheduler.StepLR(
+            self.optimizer,
+            step_size=500,  # Decay every 500 episodes
+            gamma=0.95  # Multiply LR by 0.95
+        )
+        
         # Memory buffer
         self.memory = PPOMemory()
     
@@ -285,6 +373,9 @@ class PPOAgent:
         """Update policy using PPO algorithm"""
         # Get batch from memory
         states, actions, rewards, values, old_log_probs, dones = self.memory.get_batch()
+        
+        # Store reference to agent for value clipping
+        agent = self
         
         # Compute advantages and returns using GAE
         advantages, returns = self.compute_gae(rewards, values, dones)
@@ -345,6 +436,8 @@ class PPOAgent:
                 # Value loss - ensure same shape
                 values = values.squeeze(-1)
                 batch_returns = batch_returns.squeeze(-1) if batch_returns.dim() > 1 else batch_returns
+                
+                # Simple MSE loss (more stable than clipped version)
                 critic_loss = F.mse_loss(values, batch_returns)
                 
                 # Check for NaN
@@ -399,6 +492,9 @@ def train(config, resume=False):
     # Checkpoint manager
     checkpoint_mgr = CheckpointManager(config)
     
+    # Get run number
+    run_number = checkpoint_mgr.get_next_run_number() if not resume else checkpoint_mgr.get_next_run_number() - 1
+    
     # Load checkpoint if resuming
     start_episode = 0
     scores = []
@@ -410,6 +506,8 @@ def train(config, resume=False):
             start_episode = checkpoint['episode']
             agent.model.load_state_dict(checkpoint['model_state_dict'])
             agent.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            if checkpoint.get('scheduler_state_dict'):
+                agent.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
             scores = checkpoint['scores']
             total_steps = checkpoint.get('total_steps', 0)
             print(f"Resuming from episode {start_episode}")
@@ -446,6 +544,8 @@ def train(config, resume=False):
         # Update policy after collecting T_HORIZON steps
         if len(agent.memory.states) >= config.T_HORIZON:
             actor_loss, critic_loss, entropy = agent.update()
+            # Step learning rate scheduler
+            agent.scheduler.step()
             # Memory is cleared inside update()
         
         # Calculate moving average
@@ -456,10 +556,12 @@ def train(config, resume=False):
         
         # Print progress
         if episode % 10 == 0:
+            current_lr = agent.optimizer.param_groups[0]['lr']
             print(f"Episode {episode}/{config.MAX_EPISODES} | "
                   f"Score: {episode_reward:.2f} | "
                   f"Avg Score ({config.EVAL_WINDOW}): {avg_score:.2f} | "
-                  f"Steps: {total_steps}")
+                  f"Steps: {total_steps} | "
+                  f"LR: {current_lr:.6f}")
         
         # Save checkpoint every 50 episodes
         if episode % 50 == 0:
@@ -468,6 +570,7 @@ def train(config, resume=False):
                 agent.model,
                 agent.optimizer,
                 scores,
+                scheduler=agent.scheduler,
                 metadata={
                     'episode': episode,
                     'total_steps': total_steps,
@@ -475,9 +578,9 @@ def train(config, resume=False):
                     'best_avg_score': float(best_avg_score)
                 }
             )
-        
-        # Save best model
-        if avg_score > best_avg_score:
+            
+        # Save model only if significantly better (reduce spam)
+        if avg_score > best_avg_score + 1.0:  # Require 1.0 improvement
             best_avg_score = avg_score
             agent.save_model(config.MODEL_PATH)
         
@@ -486,10 +589,19 @@ def train(config, resume=False):
             print(f"\n{'='*60}")
             print(f"✓ Target reached! Average reward: {avg_score:.2f}")
             print(f"{'='*60}\n")
-            agent.save_model(config.MODEL_PATH)
+            agent.save_model(config.MODEL_PATH)  # Save final converged model
             break
     
     env.close()
+    
+    # Calculate final average score
+    final_avg_score = np.mean(scores[-config.EVAL_WINDOW:]) if len(scores) >= config.EVAL_WINDOW else np.mean(scores)
+    
+    # Save run history
+    checkpoint_mgr.save_run_history(scores, final_avg_score, run_number)
+    
+    # Check if this is the best run
+    is_best = checkpoint_mgr.save_best_run(scores, final_avg_score, run_number)
     
     # Save final checkpoint
     checkpoint_mgr.save_checkpoint(
@@ -497,22 +609,40 @@ def train(config, resume=False):
         agent.model,
         agent.optimizer,
         scores,
+        scheduler=agent.scheduler,
         metadata={
             'episode': episode,
             'total_steps': total_steps,
-            'final_avg_score': float(avg_score),
+            'final_avg_score': float(final_avg_score),
             'best_avg_score': float(best_avg_score),
-            'converged': bool(avg_score >= config.TARGET_REWARD)
+            'converged': bool(final_avg_score >= config.TARGET_REWARD),
+            'run_number': run_number,
+            'is_best_run': is_best
         }
     )
     
-    # Plot training curve
-    plot_training_curve(scores, config)
+    # Always plot the BEST run (not necessarily this one)
+    best_run_data = checkpoint_mgr.load_best_run()
+    if best_run_data:
+        print(f"\nPlotting best run (Run #{best_run_data['run_number']}) with avg score: {best_run_data['avg_score']:.2f}")
+        plot_training_curve(best_run_data['scores'], config, run_number=best_run_data['run_number'])
+    else:
+        plot_training_curve(scores, config, run_number=run_number)
+    
+    # Print summary
+    print(f"\n{'='*60}")
+    print(f"Run #{run_number} Summary:")
+    print(f"  Final Avg Score: {final_avg_score:.2f}")
+    print(f"  Episodes: {episode}")
+    print(f"  Converged: {'Yes' if final_avg_score >= config.TARGET_REWARD else 'No'}")
+    if best_run_data:
+        print(f"\nBest Run Overall: Run #{best_run_data['run_number']} (Avg: {best_run_data['avg_score']:.2f})")
+    print(f"{'='*60}\n")
     
     return scores
 
 
-def plot_training_curve(scores, config):
+def plot_training_curve(scores, config, run_number=None):
     """Plot and save training curve"""
     plt.figure(figsize=(10, 6))
     plt.plot(scores, alpha=0.6, label='Episode Reward')
@@ -527,7 +657,13 @@ def plot_training_curve(scores, config):
                 label=f'Target Reward ({config.TARGET_REWARD})')
     plt.xlabel('Episode')
     plt.ylabel('Reward')
-    plt.title('LunarLander-v3 Training Curve (PPO)')
+    
+    # Add run number to title if provided
+    title = 'LunarLander-v3 Training Curve (PPO)'
+    if run_number:
+        title += f' - Best Run #{run_number}'
+    plt.title(title)
+    
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -607,11 +743,38 @@ def main():
                         help='Number of episodes for testing (default: 10)')
     parser.add_argument('--no-render', action='store_true',
                         help='Disable rendering during test')
+    parser.add_argument('--clear-all', action='store_true',
+                        help='Clear all saved data including best run')
+    parser.add_argument('--show-runs', action='store_true',
+                        help='Show history of all training runs')
     
     args = parser.parse_args()
     
     # Initialize configuration
     config = Config()
+    checkpoint_mgr = CheckpointManager(config)
+    
+    if args.show_runs:
+        # Show run history
+        if config.ALL_RUNS_PATH.exists():
+            with open(config.ALL_RUNS_PATH, 'rb') as f:
+                history = pickle.load(f)
+            print(f"\n{'='*60}")
+            print("Training Run History:")
+            print(f"{'='*60}")
+            for run in history:
+                print(f"Run #{run['run_number']}: Avg Score = {run['avg_score']:.2f}, Episodes = {run['episodes']}")
+            best_run = checkpoint_mgr.load_best_run()
+            if best_run:
+                print(f"\n🏆 Best: Run #{best_run['run_number']} with avg score {best_run['avg_score']:.2f}")
+            print(f"{'='*60}\n")
+        else:
+            print("No training history found.")
+        return
+    
+    if args.clear_all:
+        checkpoint_mgr.clear_all()
+        return
     
     if args.test:
         # Test mode
@@ -624,7 +787,6 @@ def main():
             # Ask to clear checkpoints
             response = input("Clear previous checkpoints? (y/N): ").strip().lower()
             if response == 'y':
-                checkpoint_mgr = CheckpointManager(config)
                 checkpoint_mgr.clear_checkpoints()
             
             train(config, resume=False)
