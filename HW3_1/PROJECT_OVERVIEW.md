@@ -95,7 +95,9 @@ python main.py --test
 
 ### Google Colab
 ```python
-# Setup
+# Clone and setup
+!git clone https://github.com/jaredlcs/HW3-Projects.git
+%cd HW3-Projects/HW3_1
 !pip install gymnasium[box2d] torch matplotlib
 
 # Upload main.py, then train

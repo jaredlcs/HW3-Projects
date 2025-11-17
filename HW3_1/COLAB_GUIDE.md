@@ -1,9 +1,15 @@
 # Google Colab Quick Start Guide
 # HW3-1: LunarLander-v3 Training
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jaredlcs/HW3-Projects/blob/main/HW3_1/colab_notebook.ipynb)
+
 This guide helps you train the LunarLander agent on Google Colab.
 
-## Quick Start (Copy-Paste into Colab)
+## Option 1: Use Pre-Made Notebook (Easiest)
+
+**Click the "Open in Colab" badge above** to open [`colab_notebook.ipynb`](colab_notebook.ipynb) - a ready-to-run notebook with all cells pre-configured. Just click "Runtime → Run all" and you're done!
+
+## Option 2: Manual Setup (Copy-Paste into Colab)
 
 ### Step 1: Install Dependencies
 
@@ -19,10 +25,10 @@ Use Colab's file upload feature:
 2. Click the upload button
 3. Upload `main.py` from your local machine
 
-Or clone from GitHub if you have your code there:
+Or clone from GitHub:
 ```python
-# !git clone https://github.com/yourusername/your-repo.git
-# %cd your-repo/HW3-Projects/HW3_1
+!git clone https://github.com/jaredlcs/HW3-Projects.git
+%cd HW3-Projects/HW3_1
 ```
 
 ### Step 3: Start Training
@@ -65,19 +71,24 @@ files.download('train_plot.png')
 ### Cell 1: Setup
 
 ```python
-# Install dependencies
+# Clone repository and install dependencies
+!git clone https://github.com/jaredlcs/HW3-Projects.git
+%cd HW3-Projects/HW3_1
 !pip install -q gymnasium[box2d] torch matplotlib
 
-print("✓ Dependencies installed")
+print("✓ Setup complete")
 ```
 
-### Cell 2: Upload Code
+### Cell 2: Verify Setup
 
 ```python
-# Upload main.py
-from google.colab import files
-uploaded = files.upload()
-print("✓ Files uploaded")
+# Check that files are present
+import os
+import torch
+print(f"main.py exists: {os.path.exists('main.py')}")
+print(f"GPU available: {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    print(f"GPU: {torch.cuda.get_device_name(0)}")
 ```
 
 ### Cell 3: Training
@@ -235,19 +246,17 @@ Here's a complete single notebook you can copy:
 # ============================================================
 
 # Cell 1: Setup
+!git clone https://github.com/jaredlcs/HW3-Projects.git
+%cd HW3-Projects/HW3_1
 !pip install -q gymnasium[box2d] torch matplotlib
 import torch
 print(f"✓ Setup complete | GPU: {torch.cuda.is_available()}")
 
-# Cell 2: Upload main.py
-from google.colab import files
-uploaded = files.upload()
-
-# Cell 3: Train (or resume)
+# Cell 2: Train (or resume)
 !python main.py
 # !python main.py --resume  # Uncomment to resume
 
-# Cell 4: View results
+# Cell 3: View results
 from IPython.display import Image, display
 import matplotlib.pyplot as plt
 plt.figure(figsize=(12, 6))
@@ -255,10 +264,11 @@ plt.imshow(plt.imread('train_plot.png'))
 plt.axis('off')
 plt.show()
 
-# Cell 5: Test model
+# Cell 4: Test model
 !python main.py --test --no-render --test-episodes 20
 
-# Cell 6: Download
+# Cell 5: Download
+from google.colab import files
 files.download('model.pth')
 files.download('train_plot.png')
 print("✓ Downloads complete")

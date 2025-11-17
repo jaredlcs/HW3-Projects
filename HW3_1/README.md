@@ -1,8 +1,34 @@
 # HW3-1: LunarLander-v3 with PPO
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jaredlcs/HW3-Projects/blob/main/HW3_1/colab_notebook.ipynb)
+
 **CSCI6353 Homework 3 - Part 1**  
 **Author:** Jared Soto  
 **Date:** November 2025
+
+## Quick Start
+
+### Run in Google Colab (Recommended)
+
+**Click the "Open in Colab" badge above** to open a ready-to-run notebook, or manually use:
+
+```python
+!git clone https://github.com/jaredlcs/HW3-Projects.git
+%cd HW3-Projects/HW3_1
+!pip install gymnasium[box2d] torch matplotlib
+!python main.py
+```
+
+See [COLAB_GUIDE.md](COLAB_GUIDE.md) for detailed Colab instructions.
+
+### Run Locally
+
+```bash
+git clone https://github.com/jaredlcs/HW3-Projects.git
+cd HW3-Projects/HW3_1
+pip install -r requirements.txt
+python main.py
+```
 
 ## Overview
 
@@ -93,10 +119,14 @@ pip install torch gymnasium numpy matplotlib
 ### Google Colab Setup
 
 ```python
+# Clone the repository
+!git clone https://github.com/jaredlcs/HW3-Projects.git
+%cd HW3-Projects/HW3_1
+
+# Install dependencies
 !pip install gymnasium[box2d] torch matplotlib
 
-# Clone your repository or upload main.py
-# Then run training
+# Run training
 !python main.py
 ```
 
