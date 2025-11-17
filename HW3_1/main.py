@@ -160,8 +160,13 @@ class ActorCritic(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         
-        # Policy distribution
-        action_probs = F.softmax(self.actor(x), dim=-1)
+        # Policy distribution with numerical stability
+        logits = self.actor(x)
+        # Clamp logits to prevent overflow
+        logits = torch.clamp(logits, min=-20, max=20)
+        action_probs = F.softmax(logits, dim=-1)
+        # Clamp probabilities to prevent NaN
+        action_probs = torch.clamp(action_probs, min=1e-8, max=1.0)
         
         # State value
         value = self.critic(x)
@@ -286,8 +291,13 @@ class PPOAgent:
         advantages = torch.FloatTensor(advantages).to(self.device)
         returns = torch.FloatTensor(returns).to(self.device)
         
-        # Normalize advantages
-        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+        # Normalize advantages with stability
+        adv_mean = advantages.mean()
+        adv_std = advantages.std()
+        if adv_std > 1e-8 and not torch.isnan(adv_std):
+            advantages = (advantages - adv_mean) / (adv_std + 1e-8)
+        else:
+            advantages = advantages - adv_mean
         
         # PPO update for K epochs
         total_actor_loss = 0
@@ -327,9 +337,15 @@ class PPOAgent:
                 surr2 = torch.clamp(ratio, 1.0 - self.config.CLIP_EPSILON, 1.0 + self.config.CLIP_EPSILON) * batch_advantages
                 actor_loss = -torch.min(surr1, surr2).mean()
                 
-                # Value loss
-                values = values.squeeze()
+                # Value loss - ensure same shape
+                values = values.squeeze(-1)
+                batch_returns = batch_returns.squeeze(-1) if batch_returns.dim() > 1 else batch_returns
                 critic_loss = F.mse_loss(values, batch_returns)
+                
+                # Check for NaN
+                if torch.isnan(actor_loss) or torch.isnan(critic_loss) or torch.isnan(entropy):
+                    print(f"Warning: NaN detected in losses. Skipping this batch.")
+                    continue
                 
                 # Total loss
                 loss = actor_loss + self.config.VALUE_COEF * critic_loss - self.config.ENTROPY_COEF * entropy
