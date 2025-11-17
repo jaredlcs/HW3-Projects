@@ -1,0 +1,20 @@
+# HW3-1: LunarLander-v3 Requirements
+# CSCI6353 Homework 3 - Part 1
+
+# Core dependencies
+torch>=2.0.0
+gymnasium>=0.29.0
+numpy>=1.21.0
+matplotlib>=3.5.0
+
+# Box2D for LunarLander rendering
+gymnasium[box2d]>=0.29.0
+
+# Optional but recommended
+# For better plots
+seaborn>=0.12.0
+
+# For Google Colab compatibility
+# (these are usually pre-installed in Colab)
+# pillow>=9.0.0
+# scipy>=1.7.0
