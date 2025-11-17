@@ -46,7 +46,7 @@ class Config:
     ACTION_DIM = 4  # LunarLander discrete actions (do nothing, left, main, right)
     
     # PPO Hyperparameters
-    LEARNING_RATE = 0.0003
+    LEARNING_RATE = 0.0001  # Reduced from 0.0003 for more stable learning
     GAMMA = 0.99  # Discount factor
     GAE_LAMBDA = 0.95  # GAE parameter
     CLIP_EPSILON = 0.2  # PPO clipping parameter
@@ -112,8 +112,13 @@ class CheckpointManager:
             pickle.dump(checkpoint, f)
         
         if metadata:
+            # Convert numpy types to Python native types for JSON
+            metadata_json = {k: (bool(v) if isinstance(v, (np.bool_, bool)) else 
+                                float(v) if isinstance(v, (np.floating, float)) else 
+                                int(v) if isinstance(v, (np.integer, int)) else v) 
+                           for k, v in metadata.items()}
             with open(self.metadata_file, 'w') as f:
-                json.dump(metadata, f, indent=2)
+                json.dump(metadata_json, f, indent=2)
         
         print(f"✓ Checkpoint saved at episode {episode}")
     
@@ -499,7 +504,7 @@ def train(config, resume=False):
             'total_steps': total_steps,
             'final_avg_score': float(avg_score),
             'best_avg_score': float(best_avg_score),
-            'converged': avg_score >= config.TARGET_REWARD
+            'converged': bool(avg_score >= config.TARGET_REWARD)
         }
     )
     
