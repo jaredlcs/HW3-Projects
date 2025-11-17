@@ -422,7 +422,6 @@ def train(config, resume=False):
     while episode < config.MAX_EPISODES:
         state, _ = env.reset()
         episode_reward = 0
-        step_count = 0
         
         while True:
             # Collect trajectory
@@ -434,14 +433,8 @@ def train(config, resume=False):
             agent.memory.store(state, action, reward, value, log_prob, done)
             
             episode_reward += reward
-            step_count += 1
             total_steps += 1
             state = next_state
-            
-            # Update policy after T_HORIZON steps or episode end
-            if total_steps % config.T_HORIZON == 0 or done:
-                if len(agent.memory.states) > 0:
-                    actor_loss, critic_loss, entropy = agent.update()
             
             if done:
                 break
@@ -449,6 +442,11 @@ def train(config, resume=False):
         # Record score
         scores.append(episode_reward)
         episode += 1
+        
+        # Update policy after collecting T_HORIZON steps
+        if len(agent.memory.states) >= config.T_HORIZON:
+            actor_loss, critic_loss, entropy = agent.update()
+            # Memory is cleared inside update()
         
         # Calculate moving average
         if len(scores) >= config.EVAL_WINDOW:
