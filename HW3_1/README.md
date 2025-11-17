@@ -13,9 +13,16 @@
 **Click the "Open in Colab" badge above** to open a ready-to-run notebook, or manually use:
 
 ```python
+# Install Box2D dependencies
+!apt-get update -qq
+!apt-get install -y swig build-essential python3-dev
+
+# Clone and setup
 !git clone https://github.com/jaredlcs/HW3-Projects.git
 %cd HW3-Projects/HW3_1
 !pip install gymnasium[box2d] torch matplotlib
+
+# Train
 !python main.py
 ```
 
@@ -119,11 +126,15 @@ pip install torch gymnasium numpy matplotlib
 ### Google Colab Setup
 
 ```python
+# Install Box2D system dependencies
+!apt-get update -qq
+!apt-get install -y swig build-essential python3-dev
+
 # Clone the repository
 !git clone https://github.com/jaredlcs/HW3-Projects.git
 %cd HW3-Projects/HW3_1
 
-# Install dependencies
+# Install Python dependencies
 !pip install gymnasium[box2d] torch matplotlib
 
 # Run training

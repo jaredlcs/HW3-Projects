@@ -5,6 +5,8 @@
 
 This guide helps you train the LunarLander agent on Google Colab.
 
+**⚠️ Important:** Make sure your GitHub repository `jaredlcs/HW3-Projects` is set to **Public** so Colab can clone it without authentication.
+
 ## Option 1: Use Pre-Made Notebook (Easiest)
 
 **Click the "Open in Colab" badge above** to open [`colab_notebook.ipynb`](colab_notebook.ipynb) - a ready-to-run notebook with all cells pre-configured. Just click "Runtime → Run all" and you're done!
@@ -71,9 +73,15 @@ files.download('train_plot.png')
 ### Cell 1: Setup
 
 ```python
-# Clone repository and install dependencies
+# Install system dependencies for Box2D
+!apt-get update -qq
+!apt-get install -y swig build-essential python3-dev
+
+# Clone repository
 !git clone https://github.com/jaredlcs/HW3-Projects.git
 %cd HW3-Projects/HW3_1
+
+# Install Python dependencies
 !pip install -q gymnasium[box2d] torch matplotlib
 
 print("✓ Setup complete")
@@ -217,9 +225,12 @@ drive.mount('/content/drive')
 
 ### Box2D Import Error
 
+If you still see Box2D errors after the initial setup:
+
 ```python
-!apt-get install -y swig
-!pip install gymnasium[box2d]
+!apt-get update
+!apt-get install -y swig build-essential python3-dev
+!pip install --upgrade gymnasium[box2d]
 ```
 
 ### Out of Memory
@@ -246,6 +257,8 @@ Here's a complete single notebook you can copy:
 # ============================================================
 
 # Cell 1: Setup
+!apt-get update -qq
+!apt-get install -y swig build-essential python3-dev
 !git clone https://github.com/jaredlcs/HW3-Projects.git
 %cd HW3-Projects/HW3_1
 !pip install -q gymnasium[box2d] torch matplotlib

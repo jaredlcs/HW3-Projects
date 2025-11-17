@@ -14,9 +14,17 @@ Open a new Colab notebook and paste these cells:
 
 ### Cell 1: Setup
 ```python
+# Install Box2D system dependencies
+!apt-get update -qq
+!apt-get install -y swig build-essential python3-dev
+
+# Clone repository
 !git clone https://github.com/jaredlcs/HW3-Projects.git
 %cd HW3-Projects/HW3_1
+
+# Install Python dependencies
 !pip install -q gymnasium[box2d] torch matplotlib
+
 import torch
 print(f"✓ Setup complete | GPU: {torch.cuda.is_available()}")
 ```

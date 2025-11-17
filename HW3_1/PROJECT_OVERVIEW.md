@@ -95,6 +95,10 @@ python main.py --test
 
 ### Google Colab
 ```python
+# Install Box2D dependencies
+!apt-get update -qq
+!apt-get install -y swig build-essential python3-dev
+
 # Clone and setup
 !git clone https://github.com/jaredlcs/HW3-Projects.git
 %cd HW3-Projects/HW3_1
