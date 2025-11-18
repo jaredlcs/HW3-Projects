@@ -8,18 +8,53 @@
 
 This project implements PPO **from scratch** without using high-level RL libraries:
 
-**Libraries used:**
-- PyTorch (for neural networks)
-- Gymnasium (for the environment only)
-- Standard Python libraries (NumPy, Matplotlib)
+## Requirements
+
+- Python 3.8 or higher
+- PyTorch
+- Gymnasium with Box2D
+- NumPy
+- Matplotlib
 
 **Not used:** Stable-Baselines3, RLlib, or any RL frameworks
 
+Install everything with:
+
+```bash
+pip install -r requirements.txt
+```
+
+## Hyperparameters
+
+These are the settings we used to train the agent:
+
+| Parameter | Value | What It Does |
+|-----------|-------|--------------|
+| Learning Rate | 0.0003 | How fast the agent learns |
+| Gamma (γ) | 0.99 | How much to value future rewards |
+| GAE Lambda (λ) | 0.95 | Balance between bias and variance |
+| Clip Epsilon (ε) | 0.2 | Prevents too-large policy updates |
+| T Horizon | 4096 | Steps collected before each update |
+| K Epochs | 10 | Training passes per batch |
+| Batch Size | 64 | Mini-batch size for training |
+| Entropy Coef | 0.01 | Encourages exploration |
+| Value Coef | 0.5 | Weight for value function loss |
+| Hidden Dim | 128 | Neural network size |
+| Max Episodes | 5000 | Maximum training episodes |
+| Target Reward | 200 | Success threshold (100-ep average) |
+
 ## Quick Start
 
-You can run this project either on **Google Colab** or **locally** on your machine.
+You can run this project either **locally** on your machine or on **Google Colab**.
 
-### Option 1: Run on Google Colab (Recommended)
+### Option 1: Run Locally
+
+```bash
+pip install -r requirements.txt
+python main.py
+```
+
+### Option 2: Run on Google Colab
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jaredlcs/HW3-Projects/blob/main/HW3_1/colab_notebook.ipynb)
 
 **Click the "Open in Colab" badge** to open a ready-to-run notebook, or manually:
@@ -36,15 +71,6 @@ You can run this project either on **Google Colab** or **locally** on your machi
 
 # Train the agent
 !python main.py
-```
-
-### Option 2: Run Locally
-
-```bash
-git clone https://github.com/jaredlcs/HW3-Projects.git
-cd HW3-Projects/HW3_1
-pip install -r requirements.txt
-python main.py
 ```
 
 ## What This Does
@@ -82,39 +108,6 @@ The algorithm learns by:
 3. Updating the policy to favor better actions
 4. Repeating until the agent masters landing
 
-## Hyperparameters
-
-These are the settings we used to train the agent:
-
-| Parameter | Value | What It Does |
-|-----------|-------|--------------|
-| Learning Rate | 0.0003 | How fast the agent learns |
-| Gamma (γ) | 0.99 | How much to value future rewards |
-| GAE Lambda (λ) | 0.95 | Balance between bias and variance |
-| Clip Epsilon (ε) | 0.2 | Prevents too-large policy updates |
-| T Horizon | 4096 | Steps collected before each update |
-| K Epochs | 10 | Training passes per batch |
-| Batch Size | 64 | Mini-batch size for training |
-| Entropy Coef | 0.01 | Encourages exploration |
-| Value Coef | 0.5 | Weight for value function loss |
-| Hidden Dim | 128 | Neural network size |
-| Max Episodes | 5000 | Maximum training episodes |
-| Target Reward | 200 | Success threshold (100-ep average) |
-
-## Requirements
-
-- Python 3.8 or higher
-- PyTorch
-- Gymnasium with Box2D
-- NumPy
-- Matplotlib
-
-Install everything with:
-
-```bash
-pip install -r requirements.txt
-```
-
 ## How to Use
 
 ### Train a New Agent
@@ -122,8 +115,6 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
-
-This will train the agent from scratch. Training takes about 20-40 minutes on CPU or 10-20 minutes on GPU.
 
 ### Resume Training (if interrupted)
 
@@ -137,7 +128,7 @@ python main.py --resume
 python main.py --test
 ```
 
-This runs 10 test episodes with visualization. For more episodes:
+For more episodes:
 
 ```bash
 python main.py --test --test-episodes 20
@@ -153,8 +144,6 @@ After training, you'll see these files:
 
 
 ## References
-
-- **Paper:** [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347) (Schulman et al., 2017)
 - **Environment:** [Gymnasium LunarLander Documentation](https://gymnasium.farama.org/environments/box2d/lunar_lander/)
 - **Course:** CSCI6353 Reinforcement Learning
 

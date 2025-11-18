@@ -1,0 +1,9 @@
+{
+  "episode": 1571,
+  "total_steps": 890040,
+  "final_avg_score": 200.3656489976746,
+  "best_avg_score": 200.3656489976746,
+  "converged": true,
+  "run_number": 1,
+  "is_best_run": true
+}

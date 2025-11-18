@@ -784,12 +784,19 @@ def main():
         if args.resume:
             train(config, resume=True)
         else:
-            # Ask to clear checkpoints
-            response = input("Clear previous checkpoints? (y/N): ").strip().lower()
-            if response == 'y':
-                checkpoint_mgr.clear_checkpoints()
+            # Check if checkpoints exist
+            checkpoint_exists = (config.CHECKPOINT_DIR / "training_progress.pkl").exists()
             
-            train(config, resume=False)
+            if checkpoint_exists:
+                # Ask to clear checkpoints or resume
+                response = input("Previous checkpoint found. Resume training? (Y/n): ").strip().lower()
+                if response == 'n':
+                    checkpoint_mgr.clear_checkpoints()
+                    train(config, resume=False)
+                else:
+                    train(config, resume=True)
+            else:
+                train(config, resume=False)
 
 
 if __name__ == "__main__":
