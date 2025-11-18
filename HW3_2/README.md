@@ -1,11 +1,11 @@
 # HW3-2: Atari Krull-v5 with DQN
 
 ## Demo Video
-**[Watch the trained agent in action on YouTube](https://youtu.be/mQDf61ym2ro)** 🚀
+**[Watch the trained agent in action on YouTube](https://youtu.be/ztuCab8BD0o)** 🎮
 
 ## Implementation Details
 
-This project implements a **Deep Q-Network (DQN)** from scratc. 
+This project implements a **Deep Q-Network (DQN)** from scratch. 
 All components—Q-network, replay buffer, preprocessing, training loop, epsilon scheduling, and target network—are written in PyTorch.
 
 ## Requirements
