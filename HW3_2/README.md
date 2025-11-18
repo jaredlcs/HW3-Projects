@@ -6,6 +6,7 @@
 ## Implementation Details
 
 This project implements a **Deep Q-Network (DQN)** from scratch. 
+
 All components—Q-network, replay buffer, preprocessing, training loop, epsilon scheduling, and target network—are written in PyTorch.
 
 ## Requirements
@@ -42,7 +43,7 @@ pip install -r requirements.txt
 | Epsilon Decay Steps | 1,000,000 |
 
 ## Quick Start
-You can run this project either **locally** on your machine.
+You can run this project **locally** on your machine.
 
 ### Run Locally
 
@@ -75,8 +76,8 @@ This project trains a **DQN agent** to play the Atari game **Krull**, learning t
 ### The Algorithm: DQN
 
 - 3-layer convolutional network → fully connected → 18 action Q-values  
-- Target network updated every 1,000 steps  
-- Replay buffer of size 100,000  
+- Target network updated every 10,000 steps  
+- Replay buffer of size 300,000  
 - Epsilon-greedy exploration schedule  
 - Manual TD target computation  
 - 4-frame stacking for motion awareness  
@@ -118,9 +119,10 @@ python main.py --test --episodes 20
 After training, you'll see these files:
 
 - **`model.pth`** - The trained agent (best model)
-- **`model_metadata.json`** – Snapshot metadata  
 - **`train_plot.png`** - Graph showing learning progress 
-- **`checkpoints/checkpoint.pkl`** – All progress files  
+- **`checkpoints/`** – Saved progress (for resuming training)
+-  various metadata and pkl files which store progress for checkpoints/plotting
+
 
 ## References
  

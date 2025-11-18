@@ -6,7 +6,7 @@
 
 ## Implementation Details
 
-This project implements PPO **from scratch** without using high-level RL libraries:
+This project implements PPO **from scratch** without using high-level RL libraries.
 
 ## Requirements
 
@@ -141,6 +141,7 @@ After training, you'll see these files:
 - **`model.pth`** - The trained agent (best model)
 - **`train_plot.png`** - Graph showing learning progress
 - **`checkpoints/`** - Saved progress (for resuming training)
+- various metadata and pkl files which store progress for checkpoints/plotting
 
 
 ## References
