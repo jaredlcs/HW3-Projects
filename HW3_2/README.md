@@ -30,7 +30,7 @@ pip install -r requirements.txt
 | Parameter | Value |
 |-----------|-------|
 | Max Steps | 2,000,000 |
-| Replay Buffer Size | 300_000 |
+| Replay Buffer Size | 300,000 |
 | Target Update | Every 10,000 steps |
 | Learning Rate | 0.0001 |
 | Gamma (γ) | 0.99 |
