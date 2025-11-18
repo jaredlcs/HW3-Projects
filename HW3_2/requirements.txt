@@ -18,7 +18,3 @@ seaborn>=0.12.0
 
 # Additional utilities
 pillow>=9.0.0
-
-# For Google Colab compatibility
-# (these are usually pre-installed in Colab)
-# importlib-resources>=5.0.0
